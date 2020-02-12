@@ -135,6 +135,9 @@
 
   function displayWaypoint(num, cx, cy, cz) {
     axios.get('https://www.spansh.co.uk/api/nearest', {
+      headers: {
+	      'Access-Control-Allow-Origin': '*',
+	    },      
       params: {
         x: cx,
         y: cy,
