@@ -5,18 +5,30 @@
     <link rel="stylesheet" type="text/css" href="semantic/dist/semantic.min.css">
   </head>
 
-<div class="ui input">
-  <input type="text" id="origin" placeholder="Origin...">
-</div>
-<div class="ui input">
-  <input type="text" id="destination" placeholder="Destination...">
-</div>
-<div class="ui input">
-  <input type="text" id="width" placeholder="Width of spiral in LY...">
-</div>
-<div class="ui input">
-  <input type="text" id="count" placeholder="Number of loops...">
-</div>
+<div class="ui right labeled input">
+  <label for="origin" class="ui label">Origin</label>
+  <input type="text" id="origin" placeholder="System name...">
+  <div class="ui basic label"></div>
+</div>  
+ 
+<div class="ui right labeled input">
+  <label for="destination" class="ui label">Destination</label>
+  <input type="text" id="destination" placeholder="System name...">
+  <div class="ui basic label"></div>
+</div> 
+
+<div class="ui right labeled input">
+  <label for="width" class="ui label">Spiral Width</label>
+  <input type="text" id="width" placeholder="Distance...">
+  <div class="ui basic label">ly</div>
+</div> 
+
+<div class="ui right labeled input">
+  <label for="count" class="ui label">Loop Count</label>
+  <input type="text" id="count" placeholder="Number...">
+  <div class="ui basic label"></div>
+</div> 
+  
 <button onclick="findRoute();">Find Route</button>
 
 <p id="parameters"></p>
