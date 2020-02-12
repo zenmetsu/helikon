@@ -18,6 +18,8 @@
   <input type="text" id="count" placeholder="Number of loops...">
 </div>
 <button onclick="findRoute();">Find Route</button>
+
+<p id="parameters"></p>
   
   
 <script
@@ -29,6 +31,7 @@
 <script>
   findRoute() {
     var origin = document.getElementById('origin').value;
+    document.getElementById("parameters").innerHTML = origin;
   }
 </script>  
 
