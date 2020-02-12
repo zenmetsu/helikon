@@ -134,10 +134,8 @@
   }
 
   function displayWaypoint(num, cx, cy, cz) {
-    axios.get('https://www.spansh.co.uk/api/nearest', {
-      headers: {
-	      'Access-Control-Allow-Origin': '*',
-	    },      
+    //axios.get('https://www.spansh.co.uk/api/nearest', {
+      axios.get('https://zenmetsu.github.io/helikon/bounce.php?url=https://www.spansh.co.uk/api/nearest', {   
       params: {
         x: cx,
         y: cy,
