@@ -5,16 +5,14 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.2.13/semantic.min.css">
   </head>
 
-<div class="ui right labeled input">
+<div class="ui labeled input">
   <label for="origin" class="ui label">Origin</label>
   <input type="text" id="origin" placeholder="System name...">
-  <div class="ui basic label"></div>
 </div>  
  
-<div class="ui right labeled input">
+<div class="ui labeled input">
   <label for="destination" class="ui label">Destination</label>
   <input type="text" id="destination" placeholder="System name...">
-  <div class="ui basic label"></div>
 </div> 
 
 <div class="ui right labeled input">
@@ -23,11 +21,10 @@
   <div class="ui basic label">ly</div>
 </div> 
 
-<div class="ui right labeled input">
-  <label for="count" class="ui label">Loop Count</label>
-  <input type="text" id="count" placeholder="Number...">
-  <div class="ui basic label"></div>
-</div> 
+<div class="ui action input">
+  <input type="text" id="count" placeholder="Loop Count">
+  <button onclick="findRoute();" class="ui button">Find Route</button>
+</div>  
   
 <button onclick="findRoute();">Find Route</button>
 
