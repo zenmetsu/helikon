@@ -21,25 +21,137 @@
   <div class="ui basic label">ly</div>
 </div> 
 
-<div class="ui action input">
-  <input type="text" id="count" placeholder="Loop Count">
-  <button onclick="findRoute();" class="ui button">Find Route</button>
+<div class="ui labeled input">
+  <label for="count" class="ui label">Loop Count</label>
+  <input type="text" id="count" placeholder="Number...">
 </div>  
-  
-<button onclick="findRoute();">Find Route</button>
 
-<p id="parameters"></p>
-  
+<button class="ui primary button" onclick="findRoute();">
+  Find Route
+</button>
+
+<p id="r"></p>
+<p id="phi"></p>
+<p id="theta"></p>  
+<p id="waypoint"></p>
   
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.2.13/semantic.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.19.2/axios.min.js"></script>
   
 <script>
+
+  var originX, originY, originZ
+  var destinationX, destinationY, destinationZ
+  var deltaX, deltaY, deltaZ
+  var r, theta, phi
+
   function findRoute() {
-    var origin = document.getElementById('origin').value;
-    document.getElementById("parameters").innerHTML = origin;
+    axios.get('https://www.edsm.net/api-v1/system', {
+      params: {
+        showCoordinates: 1,
+        systemName: document.getElementById("origin").value
+      }
+    })
+    .then(function (response) {
+      originX = response.data.coords.x;
+      originY = response.data.coords.y;
+      originZ = response.data.coords.z;
+      return axios.get('https://www.edsm.net/api-v1/system', {
+        params: {
+          showCoordinates: 1,
+          systemName: document.getElementById("destination").value
+        }
+      })
+      .then(function (response) {
+        destinationX = response.data.coords.x;
+        destinationY = response.data.coords.y;
+        destinationZ = response.data.coords.z;
+        deltaX = destinationX-originX;
+        deltaY = destinationY-originY;
+        deltaZ = destinationZ-originZ;
+      
+
+        r = Math.sqrt(Math.pow(deltaX, 2) + Math.pow(deltaY, 2) + Math.pow(deltaZ, 2));
+        theta = Math.PI / 2 - Math.acos(deltaZ/r);
+        phi = Math.atan(deltaY/deltaX);
+        document.getElementById("r").innerHTML = r;
+        document.getElementById("phi").innerHTML = phi;
+        document.getElementById("theta").innerHTML = theta;
+
+        //calculate a bounding square around the origin
+        //with sides equal to specified spiral width
+        //and with normal vector parallel to galactic X axis (east/west)
+        var bb1x = originX;
+        var bb1y = originY + parseInt(document.getElementById("width").value, 10)/2;
+        var bb1z = originZ - parseInt(document.getElementById("width").value, 10)/2;
+
+        var bb2x = originX;
+        var bb2y = originY + parseInt(document.getElementById("width").value, 10)/2;
+        var bb2z = originZ + parseInt(document.getElementById("width").value, 10)/2;
+
+        var bb3x = originX;
+        var bb3y = originY - parseInt(document.getElementById("width").value, 10)/2;
+        var bb3z = originZ + parseInt(document.getElementById("width").value, 10)/2;
+
+        var bb4x = originX;
+        var bb4y = originY - parseInt(document.getElementById("width"), 10)/2;
+        var bb4z = originZ - parseInt(document.getElementById("width"), 10)/2;
+
+        //ROTATE ORIGIN BOUNDING BOX AROUND GALACTIC Z AXIS (north/south)
+        var bb1x1 = bb1x*Math.cos(phi)+bb1y*Math.sin(phi);
+        var bb1y1 = bb1y*Math.cos(phi)-bb1x*Math.sin(phi);
+ 
+        var bb2x1 = bb2x*Math.cos(phi)+bb2y*Math.sin(phi);
+        var bb2y1 = bb2y*Math.cos(phi)-bb2x*Math.sin(phi);
+ 
+        var bb3x1 = bb3x*Math.cos(phi)+bb3y*Math.sin(phi);
+        var bb3y1 = bb3y*Math.cos(phi)-bb3x*Math.sin(phi);
+ 
+        var bb4x1 = bb4x*Math.cos(phi)+bb4y*Math.sin(phi);
+        var bb4y1 = bb4y*Math.cos(phi)-bb4x*Math.sin(phi);
+
+        //ROTATE THE Z-AXIS-ROTATED ORIGIN BOUNDING BOX AROUND THE
+        //GALACTIC Y AXIS (up/down out of plane)
+        var bb1x2 = bb1x1*Math.cos(theta)+bb1z*Math.sin(theta);
+        var bb1z2 = bb1z*Math.cos(theta)+bb1x1*Math.sin(theta);
+ 
+        var bb2x2 = bb2x1*Math.cos(theta)+bb2z*Math.sin(theta);
+        var bb2z2 = bb2z*Math.cos(theta)+bb2x1*Math.sin(theta);
+ 
+        var bb3x2 = bb3x1*Math.cos(theta)+bb3z*Math.sin(theta);
+        var bb3z2 = bb3z*Math.cos(theta)+bb3x1*Math.sin(theta);
+ 
+        var bb4x2 = bb4x1*Math.cos(theta)+bb4z*Math.sin(theta);
+        var bb4z2 = bb4z*Math.cos(theta)+bb4x1*Math.sin(theta);
+        displayWaypoint(1, bb3x2, bb3y1, bb3z2);
+      })
+
+    })
+   .catch(function (error) {
+      console.log(error);
+    }) 
   }
-</script>  
+
+  function displayWaypoint(num, cx, cy, cz) {
+    axios.get('https://www.spansh.co.uk/api/nearest', {
+      params: {
+        x: cx,
+        y: cy,
+        z: cz 
+      }
+    })
+    .then(function (response) {
+      console.log("body: " + response.body);
+      //console.log("full response: " + JSON.stringify(response));
+      var waypointsystem = response.data.system.name;
+      //document.getElementById("waypoint").innerHTML = waypointsystem;
+    })  
+    .catch(function (error) {
+      console.log(error);
+    })
+  }
+</script>   
 
 </body>
 </html>
