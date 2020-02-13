@@ -4,7 +4,8 @@
     <title>Helikon Course Plotter</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.2.13/semantic.min.css">
   </head>
-
+<h1 align="center">Helikon 0.1</h1>
+<h3 align="center">This tool will calculate a helical course from origin to destination</h3>
 <div class="ui labeled input">
   <label for="origin" class="ui label">Origin</label>
   <input type="text" id="origin" placeholder="System name...">
@@ -26,19 +27,24 @@
   <input type="text" id="count" placeholder="Number...">
 </div>  
 
-<button class="ui primary button" onclick="findRoute();">
+<button class="ui primary button" id="loadBootan" onclick="findRoute();">
   Find Route
 </button>
 
 <p id="r"></p>
 <p id="phi"></p>
 <p id="theta"></p>  
-<p id="waypoint"></p>
-  
+<p id="courseData"></p>
+<p id="courseData01"></p>
+<p id="courseData02"></p>
+<div id="waypoint01"></div>  
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.2.13/semantic.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.19.2/axios.min.js"></script>
-  
+
+
+
 <script>
 
   var originX, originY, originZ
@@ -47,6 +53,7 @@
   var r, theta, phi
 
   function findRoute() {
+    document.getElementById("loadBootan").className = "ui primary loading button";
     axios.get('https://www.edsm.net/api-v1/system', {
       params: {
         showCoordinates: 1,
@@ -75,9 +82,9 @@
         r = Math.sqrt(Math.pow(deltaX, 2) + Math.pow(deltaY, 2) + Math.pow(deltaZ, 2));
         theta = Math.PI / 2 - Math.acos(deltaZ/r);
         phi = Math.atan(deltaY/deltaX);
-        document.getElementById("r").innerHTML = r;
-        document.getElementById("phi").innerHTML = phi;
-        document.getElementById("theta").innerHTML = theta;
+        //document.getElementById("r").innerHTML = r;
+        //document.getElementById("phi").innerHTML = phi;
+        //document.getElementById("theta").innerHTML = theta;
 
         //calculate a bounding square around the origin
         //with sides equal to specified spiral width
@@ -95,8 +102,8 @@
         var bb3z = originZ + parseInt(document.getElementById("width").value, 10)/2;
 
         var bb4x = originX;
-        var bb4y = originY - parseInt(document.getElementById("width"), 10)/2;
-        var bb4z = originZ - parseInt(document.getElementById("width"), 10)/2;
+        var bb4y = originY - parseInt(document.getElementById("width").value, 10)/2;
+        var bb4z = originZ - parseInt(document.getElementById("width").value, 10)/2;
 
         //ROTATE ORIGIN BOUNDING BOX AROUND GALACTIC Z AXIS (north/south)
         var bb1x1 = bb1x*Math.cos(phi)+bb1y*Math.sin(phi);
@@ -124,35 +131,274 @@
  
         var bb4x2 = bb4x1*Math.cos(theta)+bb4z*Math.sin(theta);
         var bb4z2 = bb4z*Math.cos(theta)+bb4x1*Math.sin(theta);
-        displayWaypoint(1, bb3x2, bb3y1, bb3z2);
-      })
 
+        var wps = [];
+        var foo;
+        var wp = 0;
+        var count = parseInt(document.getElementById("count").value);
+        let axiosTasks = [];
+        let axiosTasks2 = [];
+        getWaypoints(count,bb3x2,bb3y1,bb3z2,bb2x2,bb2y1,bb2z2,bb1x2,bb1y1,bb1z2,bb4x2,bb4y1,bb4z2,deltaX,deltaY,deltaZ);
+      })
     })
    .catch(function (error) {
       console.log(error);
     }) 
   }
 
-  function displayWaypoint(num, cx, cy, cz) {
-    //axios.get('https://www.spansh.co.uk/api/nearest', {
-      axios.get('https://zenmetsu.github.io/helikon/bounce.php?url=https://www.spansh.co.uk/api/nearest', {   
-      params: {
-        x: cx,
-        y: cy,
-        z: cz 
-      }
-    })
-    .then(function (response) {
-      console.log("body: " + response.body);
-      //console.log("full response: " + JSON.stringify(response));
-      var waypointsystem = response.data.system.name;
-      //document.getElementById("waypoint").innerHTML = waypointsystem;
-    })  
-    .catch(function (error) {
-      console.log(error);
-    })
-  }
-</script>   
+  async function getWaypoints(num,x1,y1,z1,x2,y2,z2,x3,y3,z3,x4,y4,z4,dx,dy,dz) {
+    var waypoints = "";
+    var wp;
+    var sx,sy,sz;
 
-</body>
-</html>
+    const zeroPad = (num, places) => String(num).padStart(places, '0')
+
+    var lineElement0 = '<div>';
+    //lineElement0 += '<input type="checkbox" name="WP">';
+    //lineElement0 += '<label></label>';
+    lineElement0 += '<button class="ui button" ';
+    lineElement0 += 'id="';
+    var lineElement1 = '" onclick="togglewaypointButtonButtonStrike(this.id);">'
+    var lineElement1_1= '</button><button class="ui secondary button">';
+    var lineElement2 = '</button>';
+    var lineElement3 = '</div>';
+    //var lineElement7 = '<div class="ui action input"><input type="text" onclick="copyToClipboard(document.getElementById(this.id).value)" value="';
+    //var lineElement8 = '" id="';
+    //var lineElement9 = '"><button class="ui teal right labeled icon button" onclick="copyToClipboard(document.getElementById(this.id).value)><i class="copy icon"></i>Copy</button></div>'
+    var lineElement7 = '<button class="ui teal right labeled icon button" onclick="copyToClipboard(document.getElementById(this.id).name)" style="width:300px;" name="';
+    var lineElement8 = '" id="';
+    var lineElement9 = '">';
+    var lineElementA = '<i class="copy icon"></i></button></div>';
+
+    for (wp = 0; wp < num; wp++) {
+      sx = x1 + wp*4*dx/(num*4);
+      sy = y1 + wp*4*dy/(num*4);
+      sz = z1 + wp*4*dz/(num*4);
+      waypoints += (await axios.get('https://www.edsm.net/api-v1/sphere-systems', {
+        params: {
+          radius: 100,
+          x: sx,
+          y: sy,
+          z: sz 
+        }
+      })
+      .then(function (response) {
+        var minDist = 10000;
+        var waypointSys;
+        var systems = response.data;
+        for (system in systems) {
+          if (systems[system].distance < minDist) {
+            minDist = systems[system].distance;
+            waypointSys = systems[system].name;
+          }
+        }   
+        var course = lineElement0;
+        course += "WP";
+        course += 4 * wp + 1;
+        course += lineElement1;
+        course += "WP";
+        course += 4 * wp + 1;
+        course += lineElement1_1;        
+        course += sx.toFixed(3);
+        course += ", ";
+        course += sy.toFixed(3);
+        course += ", ";
+        course += sz.toFixed(3);
+        course += lineElement1_1;
+        course += " Δ";
+        course += zeroPad(minDist, 5);
+        course += "ly"; 
+        course += lineElement2;
+        course += lineElement7;
+        course += waypointSys;
+        course += lineElement8;
+        course += waypointSys;
+        course += lineElement9;
+        course += waypointSys;
+        course += lineElementA;
+        console.log(course);
+        return course;
+      }))
+      sx = x1 + (wp*4+1)*dx/(num*4);
+      sy = y1 + (wp*4+1)*dy/(num*4);
+      sz = z1 + (wp*4+1)*dz/(num*4);
+      waypoints += (await axios.get('https://www.edsm.net/api-v1/sphere-systems', {
+        params: {
+          radius: 100,
+          x: x2 + (wp*4+1)*dx/(num*4),
+          y: y2 + (wp*4+1)*dy/(num*4),
+          z: z2 + (wp*4+1)*dz/(num*4) 
+        }
+      })
+      .then(function (response) {
+        var minDist = 10000;
+        var waypointSys;
+        var systems = response.data;
+        for (system in systems) {
+          if (systems[system].distance < minDist) {
+            minDist = systems[system].distance;
+            waypointSys = systems[system].name;
+          }
+        }   
+        var course = lineElement0;
+        course += "WP";
+        course += 4 * wp + 2;
+        course += lineElement1;
+        course += "WP";
+        course += 4 * wp + 2;
+        course += lineElement1_1;
+        course += sx.toFixed(3);
+        course += ", ";
+        course += sy.toFixed(3);
+        course += ", ";
+        course += sz.toFixed(3);
+        course += lineElement1_1;
+        course += " Δ";
+        course += zeroPad(minDist, 5);
+        course += "ly";
+        course += lineElement2;
+        course += lineElement7; 
+        course += waypointSys;
+        course += lineElement8;
+        course += waypointSys;
+        course += lineElement9;
+        course += waypointSys;
+        course += lineElementA;
+        console.log(course);
+        return course;
+      }))
+      sx = x1 + (wp*4+2)*dx/(num*4);
+      sy = y1 + (wp*4+2)*dy/(num*4);
+      sz = z1 + (wp*4+2)*dz/(num*4);      
+      waypoints += (await axios.get('https://www.edsm.net/api-v1/sphere-systems', {
+        params: {
+          radius: 100,
+          x: x3 + (wp*4+2)*dx/(num*4),
+          y: y3 + (wp*4+2)*dy/(num*4),
+          z: z3 + (wp*4+2)*dz/(num*4) 
+        }
+      })
+      .then(function (response) {
+        var minDist = 10000;
+        var waypointSys;
+        var systems = response.data;
+        for (system in systems) {
+          if (systems[system].distance < minDist) {
+            minDist = systems[system].distance;
+            waypointSys = systems[system].name;
+          }
+        }   
+        var course = lineElement0;
+        course += "WP";
+        course += 4 * wp + 3;
+        course += lineElement1;
+        course += "WP";
+        course += 4 * wp + 3;
+        course += lineElement1_1;
+        course += sx.toFixed(3);
+        course += ", ";
+        course += sy.toFixed(3);
+        course += ", ";
+        course += sz.toFixed(3);
+        course += lineElement1_1;
+        course += " Δ";
+        course += zeroPad(minDist, 5);
+        course += "ly";
+        course += lineElement2;
+        course += lineElement7; 
+        course += waypointSys;
+        course += lineElement8;
+        course += waypointSys;
+        course += lineElement9;
+        course += waypointSys;
+        course += lineElementA;
+        console.log(course);
+        return course;
+      }))
+      sx = x1 + (wp*4+3)*dx/(num*4);
+      sy = y1 + (wp*4+3)*dy/(num*4);
+      sz = z1 + (wp*4+3)*dz/(num*4);
+      waypoints += (await axios.get('https://www.edsm.net/api-v1/sphere-systems', {
+        params: {
+          radius: 100,
+          x: x4 + (wp*4+3)*dx/(num*4),
+          y: y4 + (wp*4+3)*dy/(num*4),
+          z: z4 + (wp*4+3)*dz/(num*4) 
+        }
+      })
+      .then(function (response) {
+        var minDist = 10000;
+        var waypointSys;
+        var systems = response.data;
+        for (system in systems) {
+          if (systems[system].distance < minDist) {
+            minDist = systems[system].distance;
+            waypointSys = systems[system].name;
+          }
+        }   
+        var course = lineElement0;
+        course += "WP";
+        course += 4 * wp + 4;
+        course += lineElement1;
+        course += "WP";
+        course += 4 * wp + 4;
+        course += lineElement1_1;
+        course += sx.toFixed(3);
+        course += ", ";
+        course += sy.toFixed(3);
+        course += ", ";
+        course += sz.toFixed(3);
+        course += lineElement1_1;
+        course += " Δ";
+        course += zeroPad(minDist, 5);
+        course += "ly";
+        course += lineElement2;
+        course += lineElement7; 
+        course += waypointSys;
+        course += lineElement8;
+        course += waypointSys;
+        course += lineElement9;
+        course += waypointSys;
+        course += lineElementA;
+        console.log(course);
+        return course;
+      }))      
+    console.log(waypoints); 
+    document.getElementById("courseData").innerHTML = waypoints;
+    }  
+  document.getElementById("loadBootan").className = "ui primary button";   
+  }
+  function togglewaypointButtonButtonStrike(id) {
+    if (document.getElementById(id).classList.contains("struck")) {
+      document.getElementById(id).innerHTML = id;
+    } else {
+      document.getElementById(id).innerHTML = "<s>" + id + "</s>"
+    }
+    document.getElementById(id).classList.toggle("struck")
+  }
+
+  function copyToClipboard(text) {
+    if (window.clipboardData && window.clipboardData.setData) {
+        // Internet Explorer-specific code path to prevent textarea being shown while dialog is visible.
+        return clipboardData.setData("Text", text);
+
+    }
+    else if (document.queryCommandSupported && document.queryCommandSupported("copy")) {
+        var textarea = document.createElement("textarea");
+        textarea.textContent = text;
+        textarea.style.position = "fixed";  // Prevent scrolling to bottom of page in Microsoft Edge.
+        document.body.appendChild(textarea);
+        textarea.select();
+        try {
+            return document.execCommand("copy");  // Security exception may be thrown by some browsers.
+        }
+        catch (ex) {
+            console.warn("Copy to clipboard failed.", ex);
+            return false;
+        }
+        finally {
+            document.body.removeChild(textarea);
+        }
+    }
+}
+</script>  
