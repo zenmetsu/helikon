@@ -165,14 +165,75 @@ General
 
   async function getWaypoints(num,x1,y1,z1,x2,y2,z2,x3,y3,z3,x4,y4,z4,dx,dy,dz) {
     var waypoints = "";
-    var wp;
+    var loop=0;
+    var wp=0;
     var sx,sy,sz;
+    var waypointSys, errorDistance;
+    var waypoint = [];
 
-    const zeroPad = (num, places) => String(num).padStart(places, '0')
+    for (loop = 0; loop < num; loop++) {
+      wp++;
+      sx = x1 + wp*dx/(num*4);
+      sy = y1 + wp*dy/(num*4);
+      sz = z1 + wp*dz/(num*4);
+      waypoint = await getWaypointSystem(sx,sy,sz,100);
+      waypoints += await generateCourseEntry(wp,waypoint.systemname,sx,sy,sz,waypoint.errordist);
+      wp++;
+      sx = x2 + wp*dx/(num*4);
+      sy = y2 + wp*dy/(num*4);
+      sz = z2 + wp*dz/(num*4);
+      waypoint = await getWaypointSystem(sx,sy,sz,100);
+      waypoints += await generateCourseEntry(wp,waypoint.systemname,sx,sy,sz,waypoint.errordist);
+      wp++;
+      sx = x3 + wp*dx/(num*4);
+      sy = y3 + wp*dy/(num*4);
+      sz = z3 + wp*dz/(num*4);
+      waypoint = await getWaypointSystem(sx,sy,sz,100);
+      waypoints += await generateCourseEntry(wp,waypoint.systemname,sx,sy,sz,waypoint.errordist);
+      wp++;
+      sx = x4 + wp*dx/(num*4);
+      sy = y4 + wp*dy/(num*4);
+      sz = z4 + wp*dz/(num*4);
+      waypoint = await getWaypointSystem(sx,sy,sz,100);
+      waypoints += await generateCourseEntry(wp,waypoint.systemname,sx,sy,sz,waypoint.errordist);
+      document.getElementById("courseData").innerHTML = waypoints;
+    }  
+  document.getElementById("loadBootan").className = "ui primary button";   
+  }
 
+
+  async function getWaypointSystem(cx,cy,cz,searchRadius) {
+    var errordist = 10000;
+    var systemname = "NOT FOUND";
+
+    await axios.get('https://www.edsm.net/api-v1/sphere-systems', {
+      params: {
+        radius: searchRadius,
+        x: cx,
+        y: cy,
+        z: cz 
+        }
+      })
+      .then(function (response) {
+        console.log("getWaypointSystem : " + cx,cy,cz,searchRadius);
+        var systems = response.data;
+        for (system in systems) {
+          if (systems[system].distance < errordist) {
+            errordist = systems[system].distance;
+            systemname = systems[system].name;
+          }
+        }
+      })
+    return {
+      systemname: systemname,
+      errordist: errordist
+    };  
+  }
+
+  function generateCourseEntry(waypointnum,systemID,cx,cy,cz,distance){
+    console.log("generateCourseEntry : " + waypointnum,systemID,cx,cy,cz,distance);
+    const zeroPad = (num, places) => String(num).padStart(places, '0');
     var lineElement0 = '<div>';
-    //lineElement0 += '<input type="checkbox" name="WP">';
-    //lineElement0 += '<label></label>';
     lineElement0 += '<button class="ui button" style="width:10%;"';
     lineElement0 += 'id="';
     var lineElement1 = '" onclick="togglewaypointButtonButtonStrike(this.id);">'
@@ -184,252 +245,47 @@ General
     var lineElement1_2green  = '</button><button style="width:20%;" class="ui green button">';
     var lineElement2 = '</button>';
     var lineElement3 = '</div>';
-    //var lineElement7 = '<div class="ui action input"><input type="text" onclick="copyToClipboard(document.getElementById(this.id).value)" value="';
-    //var lineElement8 = '" id="';
-    //var lineElement9 = '"><button class="ui teal right labeled icon button" onclick="copyToClipboard(document.getElementById(this.id).value)><i class="copy icon"></i>Copy</button></div>'
     var lineElement7 = '<button class="ui teal right labeled icon button" onclick="copyToClipboard(document.getElementById(this.id).name)" style="width:40%;" name="';
     var lineElement8 = '" id="';
     var lineElement9 = '">';
     var lineElementA = '<i class="copy icon"></i></button></div>';
+    var course = lineElement0;
+    course += "WP";
+    course += waypointnum;
+    course += lineElement1;
+    course += "WP";
+    course += waypointnum;
+    course += lineElement1_1;
+    course += cx.toFixed(3);
+    course += ", ";
+    course += cy.toFixed(3);
+    course += ", ";
+    course += cz.toFixed(3);
+    if (distance > 500) {
+       course += lineElement1_2red;
+    } else if (distance > 200) {
+      course += lineElement1_2orange;
+    } else if (distance > 100) {
+      course += lineElement1_2yellow;
+    } else if (distance > 50) {
+      course += lineElement1_2olive;
+    } else {
+      course += lineElement1_2green;
+    }
+    course += " Δ";
+    course += zeroPad(distance, 5);
+    course += "ly";
+    course += lineElement2;
+    course += lineElement7; 
+    course += systemID;
+    course += lineElement8;
+    course += systemID;
+    course += lineElement9;
+    course += systemID;
+    course += lineElementA;
+    return course;        
+  }    
 
-    for (wp = 0; wp < num; wp++) {
-      sx = x1 + wp*4*dx/(num*4);
-      sy = y1 + wp*4*dy/(num*4);
-      sz = z1 + wp*4*dz/(num*4);
-      waypoints += (await axios.get('https://www.edsm.net/api-v1/sphere-systems', {
-        params: {
-          radius: 100,
-          x: sx,
-          y: sy,
-          z: sz 
-        }
-      })
-      .then(function (response) {
-        var minDist = 10000;
-        var waypointSys = "NOT FOUND"
-        var systems = response.data;
-        for (system in systems) {
-          if (systems[system].distance < minDist) {
-            minDist = systems[system].distance;
-            waypointSys = systems[system].name;
-          }
-        }   
-        var course = lineElement0;
-        course += "WP";
-        course += 4 * wp + 1;
-        course += lineElement1;
-        course += "WP";
-        course += 4 * wp + 1;
-        course += lineElement1_1;        
-        course += sx.toFixed(3);
-        course += ", ";
-        course += sy.toFixed(3);
-        course += ", ";
-        course += sz.toFixed(3);
-        if (minDist > 500) {
-           course += lineElement1_2red;
-        } else if (minDist > 200) {
-          course += lineElement1_2orange;
-        } else if (minDist > 100) {
-          course += lineElement1_2yellow;
-        } else if (minDist > 50) {
-          course += lineElement1_2olive;
-        } else {
-          course += lineElement1_2green;
-        }
-        course += " Δ";
-        course += zeroPad(minDist, 5);
-        course += "ly";
-        course += lineElement2;
-        course += lineElement7;
-        course += waypointSys;
-        course += lineElement8;
-        course += waypointSys;
-        course += lineElement9;
-        course += waypointSys;
-        course += lineElementA;
-        console.log(course);
-        return course;
-      }))
-      sx = x2 + (wp*4+1)*dx/(num*4);
-      sy = y2 + (wp*4+1)*dy/(num*4);
-      sz = z2 + (wp*4+1)*dz/(num*4);
-      waypoints += (await axios.get('https://www.edsm.net/api-v1/sphere-systems', {
-        params: {
-          radius: 100,
-          x: sx,
-          y: sy,
-          z: sz 
-        }
-      })
-      .then(function (response) {
-        var minDist = 10000;
-        var waypointSys = "NOT FOUND"
-        var systems = response.data;
-        for (system in systems) {
-          if (systems[system].distance < minDist) {
-            minDist = systems[system].distance;
-            waypointSys = systems[system].name;
-          }
-        }   
-        var course = lineElement0;
-        course += "WP";
-        course += 4 * wp + 2;
-        course += lineElement1;
-        course += "WP";
-        course += 4 * wp + 2;
-        course += lineElement1_1;
-        course += sx.toFixed(3);
-        course += ", ";
-        course += sy.toFixed(3);
-        course += ", ";
-        course += sz.toFixed(3);
-        if (minDist > 500) {
-           course += lineElement1_2red;
-        } else if (minDist > 200) {
-          course += lineElement1_2orange;
-        } else if (minDist > 100) {
-          course += lineElement1_2yellow;
-        } else if (minDist > 50) {
-          course += lineElement1_2olive;
-        } else {
-          course += lineElement1_2green;
-        }
-        course += " Δ";
-        course += zeroPad(minDist, 5);
-        course += "ly";
-        course += lineElement2;
-        course += lineElement7; 
-        course += waypointSys;
-        course += lineElement8;
-        course += waypointSys;
-        course += lineElement9;
-        course += waypointSys;
-        course += lineElementA;
-        console.log(course);
-        return course;
-      }))
-      sx = x3 + (wp*4+2)*dx/(num*4);
-      sy = y3 + (wp*4+2)*dy/(num*4);
-      sz = z3 + (wp*4+2)*dz/(num*4);      
-      waypoints += (await axios.get('https://www.edsm.net/api-v1/sphere-systems', {
-        params: {
-          radius: 100,
-          x: sx,
-          y: sy,
-          z: sz 
-        }
-      })
-      .then(function (response) {
-        var minDist = 10000;
-        var waypointSys = "NOT FOUND"
-        var systems = response.data;
-        for (system in systems) {
-          if (systems[system].distance < minDist) {
-            minDist = systems[system].distance;
-            waypointSys = systems[system].name;
-          }
-        }   
-        var course = lineElement0;
-        course += "WP";
-        course += 4 * wp + 3;
-        course += lineElement1;
-        course += "WP";
-        course += 4 * wp + 3;
-        course += lineElement1_1;
-        course += sx.toFixed(3);
-        course += ", ";
-        course += sy.toFixed(3);
-        course += ", ";
-        course += sz.toFixed(3);
-        if (minDist > 500) {
-           course += lineElement1_2red;
-        } else if (minDist > 200) {
-          course += lineElement1_2orange;
-        } else if (minDist > 100) {
-          course += lineElement1_2yellow;
-        } else if (minDist > 50) {
-          course += lineElement1_2olive;
-        } else {
-          course += lineElement1_2green;
-        }
-        course += " Δ";
-        course += zeroPad(minDist, 5);
-        course += "ly";
-        course += lineElement2;
-        course += lineElement7; 
-        course += waypointSys;
-        course += lineElement8;
-        course += waypointSys;
-        course += lineElement9;
-        course += waypointSys;
-        course += lineElementA;
-        console.log(course);
-        return course;
-      }))
-      sx = x4 + (wp*4+3)*dx/(num*4);
-      sy = y4 + (wp*4+3)*dy/(num*4);
-      sz = z4 + (wp*4+3)*dz/(num*4);
-      waypoints += (await axios.get('https://www.edsm.net/api-v1/sphere-systems', {
-        params: {
-          radius: 100,
-          x: sx,
-          y: sy,
-          z: sz 
-        }
-      })
-      .then(function (response) {
-        var minDist = 10000;
-        var waypointSys = "NOT FOUND";
-        var systems = response.data;
-        for (system in systems) {
-          if (systems[system].distance < minDist) {
-            minDist = systems[system].distance;
-            waypointSys = systems[system].name;
-          }
-        }   
-        var course = lineElement0;
-        course += "WP";
-        course += 4 * wp + 4;
-        course += lineElement1;
-        course += "WP";
-        course += 4 * wp + 4;
-        course += lineElement1_1;
-        course += sx.toFixed(3);
-        course += ", ";
-        course += sy.toFixed(3);
-        course += ", ";
-        course += sz.toFixed(3);
-        if (minDist > 500) {
-           course += lineElement1_2red;
-        } else if (minDist > 200) {
-          course += lineElement1_2orange;
-        } else if (minDist > 100) {
-          course += lineElement1_2yellow;
-        } else if (minDist > 50) {
-          course += lineElement1_2olive;
-        } else {
-          course += lineElement1_2green;
-        }
-        course += " Δ";
-        course += zeroPad(minDist, 5);
-        course += "ly";
-        course += lineElement2;
-        course += lineElement7; 
-        course += waypointSys;
-        course += lineElement8;
-        course += waypointSys;
-        course += lineElement9;
-        course += waypointSys;
-        course += lineElementA;
-        console.log(course);
-        return course;
-      }))      
-    console.log(waypoints); 
-    document.getElementById("courseData").innerHTML = waypoints;
-    }  
-  document.getElementById("loadBootan").className = "ui primary button";   
-  }
   function togglewaypointButtonButtonStrike(id) {
     if (document.getElementById(id).classList.contains("struck")) {
       document.getElementById(id).innerHTML = id;
@@ -462,5 +318,5 @@ General
             document.body.removeChild(textarea);
         }
     }
-}
+  } 
 </script>  
