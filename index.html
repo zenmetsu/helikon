@@ -81,6 +81,7 @@ General
       originX = response.data.coords.x;
       originY = response.data.coords.y;
       originZ = response.data.coords.z;
+      
       return axios.get('https://www.edsm.net/api-v1/system', {
         params: {
           showCoordinates: 1,
@@ -94,11 +95,14 @@ General
         deltaX = destinationX-originX;
         deltaY = destinationY-originY;
         deltaZ = destinationZ-originZ;
-      
+        console.log(originX,originY,originZ);
+        console.log(destinationX,destinationY,destinationZ);
+        console.log(deltaX,deltaY,deltaZ);
 
         r = Math.sqrt(Math.pow(deltaX, 2) + Math.pow(deltaY, 2) + Math.pow(deltaZ, 2));
         theta = Math.PI / 2 - Math.acos(deltaZ/r);
         phi = Math.atan(deltaY/deltaX);
+        console.log("r, phi, theta : ", r, phi, theta);
         //document.getElementById("r").innerHTML = r;
         //document.getElementById("phi").innerHTML = phi;
         //document.getElementById("theta").innerHTML = theta;
@@ -106,21 +110,21 @@ General
         //calculate a bounding square around the origin
         //with sides equal to specified spiral width
         //and with normal vector parallel to galactic X axis (east/west)
-        var bb1x = originX;
-        var bb1y = originY + parseInt(document.getElementById("width").value, 10)/2;
-        var bb1z = originZ - parseInt(document.getElementById("width").value, 10)/2;
+        var bb1x = 0;
+        var bb1y = parseInt(document.getElementById("width").value, 10)/2;
+        var bb1z = -1 * parseInt(document.getElementById("width").value, 10)/2;
+        console.log("bb1 pre rotation : ", bb1x,bb1y,bb1z);
+        var bb2x = 0;
+        var bb2y = parseInt(document.getElementById("width").value, 10)/2;
+        var bb2z = parseInt(document.getElementById("width").value, 10)/2;
 
-        var bb2x = originX;
-        var bb2y = originY + parseInt(document.getElementById("width").value, 10)/2;
-        var bb2z = originZ + parseInt(document.getElementById("width").value, 10)/2;
+        var bb3x = 0;
+        var bb3y = -1 * parseInt(document.getElementById("width").value, 10)/2;
+        var bb3z = parseInt(document.getElementById("width").value, 10)/2;
 
-        var bb3x = originX;
-        var bb3y = originY - parseInt(document.getElementById("width").value, 10)/2;
-        var bb3z = originZ + parseInt(document.getElementById("width").value, 10)/2;
-
-        var bb4x = originX;
-        var bb4y = originY - parseInt(document.getElementById("width").value, 10)/2;
-        var bb4z = originZ - parseInt(document.getElementById("width").value, 10)/2;
+        var bb4x = 0;
+        var bb4y = -1 * parseInt(document.getElementById("width").value, 10)/2;
+        var bb4z = -1 * parseInt(document.getElementById("width").value, 10)/2;
 
         //ROTATE ORIGIN BOUNDING BOX AROUND GALACTIC Z AXIS (north/south)
         var bb1x1 = bb1x*Math.cos(phi)+bb1y*Math.sin(phi);
@@ -148,6 +152,22 @@ General
  
         var bb4x2 = bb4x1*Math.cos(theta)+bb4z*Math.sin(theta);
         var bb4z2 = bb4z*Math.cos(theta)+bb4x1*Math.sin(theta);
+
+        // Apply origin system offsets
+
+        bb1x2 += originX;
+        bb2x2 += originX;
+        bb3x2 += originX;
+        bb4x2 += originX;
+        bb1y1 += originY;
+        bb2y1 += originY;
+        bb3y1 += originY;
+        bb4y1 += originY;
+        bb1z2 += originZ;
+        bb2z2 += originZ;
+        bb3z2 += originZ;
+        bb4z2 += originZ;
+
 
         var wps = [];
         var foo;
@@ -206,28 +226,30 @@ General
     var errordist = 10000;
     var systemname = "NOT FOUND";
 
-    await axios.get('https://www.edsm.net/api-v1/sphere-systems', {
-      params: {
-        radius: searchRadius,
-        x: cx,
-        y: cy,
-        z: cz 
-        }
-      })
-      .then(function (response) {
-        console.log("getWaypointSystem : " + cx,cy,cz,searchRadius);
-        var systems = response.data;
-        for (system in systems) {
-          if (systems[system].distance < errordist) {
-            errordist = systems[system].distance;
-            systemname = systems[system].name;
+    while (errordist = 10000) {
+      await axios.get('https://www.edsm.net/api-v1/sphere-systems', {
+        params: {
+          radius: searchRadius,
+          x: cx,
+          y: cy,
+          z: cz 
           }
-        }
-      })
-    return {
-      systemname: systemname,
-      errordist: errordist
-    };  
+        })
+        .then(function (response) {
+          console.log("getWaypointSystem : " + cx,cy,cz,searchRadius);
+          var systems = response.data;
+          for (system in systems) {
+            if (systems[system].distance < errordist) {
+              errordist = systems[system].distance;
+              systemname = systems[system].name;
+            }
+          }
+        })
+      return {
+        systemname: systemname,
+        errordist: errordist
+      };  
+    }
   }
 
   function generateCourseEntry(waypointnum,systemID,cx,cy,cz,distance){
